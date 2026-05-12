@@ -449,29 +449,62 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: any, title: str
 const ShowcaseCard = ({ size, videoUrl }: { size: string, videoUrl?: string }) => {
   const isVimeo = videoUrl?.includes('vimeo');
   const vimeoId = isVimeo ? videoUrl?.split('/').pop()?.split('?')[0] : null;
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        } else {
+          // Optional: You could set it to false here to stop video when scrolled away
+          // But usually we just want to delay initial load
+        }
+      },
+      { threshold: 0.1, rootMargin: "200px" } // Start loading slightly before it enters
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <motion.div 
+      ref={cardRef}
       whileHover={{ scale: 1.02 }}
       className={`${size} relative rounded-3xl overflow-hidden group border border-white/10 hover:border-primary-red/50 transition-all duration-500 bg-zinc-900 aspect-video`}
     >
-      {isVimeo ? (
-        <iframe
-          src={`https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=1&autopause=0&background=1`}
-          className="absolute inset-0 w-full h-full object-cover scale-110 pointer-events-none brightness-[0.7] group-hover:brightness-100"
-          frameBorder="0"
-          allow="autoplay; fullscreen"
-          allowFullScreen
-        ></iframe>
-      ) : (
-        <video 
-          src={videoUrl || "https://assets.mixkit.co/videos/preview/mixkit-abstract-motion-of-red-and-white-smoke-on-a-black-background-44026-large.mp4"}
-          autoPlay 
-          muted 
-          loop 
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 brightness-[0.7] group-hover:brightness-100"
-        />
+      {!isVisible && (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+           <div className="w-12 h-12 border-2 border-primary-red/20 border-t-primary-red rounded-full animate-spin" />
+        </div>
+      )}
+      
+      {isVisible && (
+        <>
+          {isVimeo ? (
+            <iframe
+              src={`https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=1&autopause=0&background=1&quality=720p`}
+              className="absolute inset-0 w-full h-full object-cover scale-110 pointer-events-none brightness-[0.7] group-hover:brightness-100"
+              frameBorder="0"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+            ></iframe>
+          ) : (
+            <video 
+              src={videoUrl || "https://assets.mixkit.co/videos/preview/mixkit-abstract-motion-of-red-and-white-smoke-on-a-black-background-44026-large.mp4"}
+              autoPlay 
+              muted 
+              loop 
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 brightness-[0.7] group-hover:brightness-100"
+            />
+          )}
+        </>
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
     </motion.div>
