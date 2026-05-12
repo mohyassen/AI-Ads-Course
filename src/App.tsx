@@ -19,7 +19,9 @@ import {
   Clock
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
+import Player from "@vimeo/player";
 import { AnimatePresence } from "motion/react";
+
 import instructorImg from "./assets/images/regenerated_image_1778569407530.jpg";
 import logoImg from "./assets/images/logo.png";
 
@@ -63,15 +65,15 @@ const PromoPopup = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Show popup after 20 seconds only once per session
+  // Show popup after 5 seconds only once per session
   useEffect(() => {
-    const sessionSeen = sessionStorage.getItem("promoSeen");
+    const sessionSeen = sessionStorage.getItem("promoSeen_v2");
     if (sessionSeen) return;
 
     const timeout = setTimeout(() => {
       setIsVisible(true);
-      sessionStorage.setItem("promoSeen", "true");
-    }, 20000); // 20 seconds
+      sessionStorage.setItem("promoSeen_v2", "true");
+    }, 5000); // 5 seconds
 
     return () => clearTimeout(timeout);
   }, []);
@@ -270,6 +272,8 @@ const Hero = () => {
   const [shouldPlay, setShouldPlay] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<Player | null>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -287,6 +291,31 @@ const Hero = () => {
 
     return () => observer.disconnect();
   }, []);
+
+  // Initialize Vimeo Player
+  useEffect(() => {
+    if (shouldPlay && iframeRef.current && !playerRef.current) {
+      const player = new Player(iframeRef.current);
+      playerRef.current = player;
+
+      // Ensure we stay in sync with initial muted state
+      player.setMuted(true);
+      setIsMuted(true);
+    }
+  }, [shouldPlay]);
+
+  const toggleMute = async () => {
+    if (playerRef.current) {
+      const currentMuted = await playerRef.current.getMuted();
+      const newMuted = !currentMuted;
+      await playerRef.current.setMuted(newMuted);
+      setIsMuted(newMuted);
+      
+      if (!newMuted) {
+        playerRef.current.play().catch(() => {});
+      }
+    }
+  };
 
   return (
     <section ref={sectionRef} className="relative min-h-screen flex items-center justify-center pt-32 pb-20 px-6 overflow-hidden">
@@ -360,7 +389,8 @@ const Hero = () => {
               {shouldPlay ? (
                 <>
                   <iframe 
-                    src={`https://player.vimeo.com/video/1191421992?autoplay=1&muted=${isMuted ? 1 : 0}&loop=1&autopause=0&badge=0&player_id=0&app_id=58479&controls=0&title=0&byline=0&portrait=0`}
+                    ref={iframeRef}
+                    src={`https://player.vimeo.com/video/1191421992?autoplay=1&muted=1&loop=1&autopause=0&badge=0&player_id=0&app_id=58479&controls=0&title=0&byline=0&portrait=0`}
                     title="Vimeo video player"
                     frameBorder="0"
                     allow="autoplay; fullscreen; picture-in-picture"
@@ -368,7 +398,7 @@ const Hero = () => {
                     className="absolute inset-0 w-full h-full object-cover brightness-100 scale-105"
                   ></iframe>
                   <motion.button 
-                    onClick={() => setIsMuted(!isMuted)}
+                    onClick={toggleMute}
                     animate={{ 
                       boxShadow: [
                         "0 0 0px rgba(178,31,45,0)", 
