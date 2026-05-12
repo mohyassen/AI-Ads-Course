@@ -65,15 +65,15 @@ const PromoPopup = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Show popup after 5 seconds only once per session
+  // Show popup after 35 seconds only once per session
   useEffect(() => {
-    const sessionSeen = sessionStorage.getItem("promoSeen_v2");
+    const sessionSeen = sessionStorage.getItem("promoSeen_v3");
     if (sessionSeen) return;
 
     const timeout = setTimeout(() => {
       setIsVisible(true);
-      sessionStorage.setItem("promoSeen_v2", "true");
-    }, 5000); // 5 seconds
+      sessionStorage.setItem("promoSeen_v3", "true");
+    }, 35000); // 35 seconds
 
     return () => clearTimeout(timeout);
   }, []);
