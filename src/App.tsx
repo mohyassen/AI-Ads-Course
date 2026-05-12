@@ -13,13 +13,193 @@ import {
   Sparkles,
   ArrowRight,
   Volume2,
-  VolumeX
+  VolumeX,
+  X,
+  Copy,
+  Clock
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { AnimatePresence } from "motion/react";
 import instructorImg from "./assets/images/regenerated_image_1778569407530.jpg";
 import logoImg from "./assets/images/logo.png";
 
 // --- Components ---
+
+const PromoPopup = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  const [hasEnded, setHasEnded] = useState(false);
+
+  const PROMO_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+  const DISCOUNT_CODE = "YASSEN20";
+
+  // Initialize countdown
+  useEffect(() => {
+    let startTime = localStorage.getItem("promoStartTime");
+    if (!startTime) {
+      startTime = Date.now().toString();
+      localStorage.setItem("promoStartTime", startTime);
+    }
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - parseInt(startTime!);
+      const remaining = PROMO_DURATION - elapsed;
+
+      if (remaining <= 0) {
+        setHasEnded(true);
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        clearInterval(timer);
+      } else {
+        const d = Math.floor(remaining / (1000 * 60 * 60 * 24));
+        const h = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((remaining % (1000 * 60)) / 1000);
+        setTimeLeft({ d, h, m, s });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Show popup after 20 seconds only once per session
+  useEffect(() => {
+    const sessionSeen = sessionStorage.getItem("promoSeen");
+    if (sessionSeen) return;
+
+    const timeout = setTimeout(() => {
+      setIsVisible(true);
+      sessionStorage.setItem("promoSeen", "true");
+    }, 20000); // 20 seconds
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(DISCOUNT_CODE);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const closePopup = () => setIsVisible(false);
+
+  const TimeUnit = ({ value, label }: { value: number; label: string }) => (
+    <div className="flex flex-col items-center">
+      <div className="w-14 h-16 md:w-16 md:h-20 bg-zinc-900 border border-white/10 rounded-xl flex items-center justify-center text-2xl md:text-3xl font-bold shadow-[0_0_15px_rgba(178,31,45,0.1)] relative overflow-hidden group">
+        <div className="absolute inset-0 bg-primary-red/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <span className="relative z-10">{value.toString().padStart(2, '0')}</span>
+      </div>
+      <span className="text-[10px] md:text-xs text-white/40 mt-2 uppercase tracking-widest">{label}</span>
+    </div>
+  );
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          {/* Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closePopup}
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="relative w-full max-w-lg bg-zinc-950 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(178,31,45,0.2)] text-center p-8 md:p-12"
+          >
+            {/* Background Glow */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary-red/20 blur-[80px] rounded-full" />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-primary-red/10 blur-[80px] rounded-full" />
+
+            <button 
+              onClick={closePopup}
+              className="absolute top-6 left-6 text-white/30 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-red/10 border border-primary-red/20 text-primary-red text-xs font-bold mb-6">
+                <Clock size={14} />
+                <span>عرض لفترة محدودة</span>
+              </div>
+
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">خصم إضافي 20% <br/> لمـدة محـدودة</h2>
+              <p className="text-white/60 mb-8 leading-relaxed">
+                استخدم كود الخصم الآن واحصل على خصم إضافي على الكورس، واستمتع بكل التحديثات القادمة مدى الحياة.
+              </p>
+
+              {/* Countdown Timer */}
+              <div className="mb-10">
+                <p className="text-sm text-white/40 mb-4 font-medium">
+                  {hasEnded ? "انتهى العرض" : "ينتهي العرض خلال"}
+                </p>
+                {!hasEnded && timeLeft && (
+                  <div className="flex justify-center items-center gap-3 md:gap-4" dir="ltr">
+                    <TimeUnit value={timeLeft.d} label="أيام" />
+                    <span className="text-2xl font-bold text-white/20 mt-[-20px]">:</span>
+                    <TimeUnit value={timeLeft.h} label="ساعات" />
+                    <span className="text-2xl font-bold text-white/20 mt-[-20px]">:</span>
+                    <TimeUnit value={timeLeft.m} label="دقائق" />
+                    <span className="text-2xl font-bold text-white/20 mt-[-20px]">:</span>
+                    <TimeUnit value={timeLeft.s} label="ثواني" />
+                  </div>
+                )}
+              </div>
+
+              {/* Discount Code */}
+              <div className="mb-10">
+                <div 
+                  onClick={handleCopyCode}
+                  className="group relative cursor-pointer"
+                >
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary-red/50 to-transparent rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500" />
+                  <div className="relative bg-black border border-white/10 rounded-2xl p-4 flex items-center justify-between hover:border-primary-red/50 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary-red/10 rounded-lg flex items-center justify-center text-primary-red">
+                        <Copy size={18} />
+                      </div>
+                      <span className="text-xl font-mono font-bold tracking-widest">{DISCOUNT_CODE}</span>
+                    </div>
+                    <span className="text-xs font-bold text-primary-red uppercase tracking-wider">
+                      {isCopied ? "تم النسخ" : "نسخ الكود"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <a 
+                  href="https://mohamedyassen.nzmly.com/l/hJXAPcMbba"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-5 bg-primary-red hover:bg-red-700 text-white text-xl font-bold rounded-2xl transition-all hover:scale-[1.02] shadow-[0_10px_30px_rgba(178,31,45,0.3)] flex items-center justify-center gap-2 group"
+                >
+                  الحق الخصم الآن
+                  <ArrowRight size={20} className="group-hover:translate-x-[-4px] transition-transform rotate-180" />
+                </a>
+
+                <button 
+                  onClick={closePopup}
+                  className="text-white/30 hover:text-white text-sm font-medium transition-colors"
+                >
+                  لاحقًا
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const MouseGlow = () => {
   const mouseX = useMotionValue(0);
@@ -584,6 +764,8 @@ export default function App() {
 
         </div>
       </footer>
+      
+      <PromoPopup />
     </div>
   );
 }
