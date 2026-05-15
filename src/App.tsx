@@ -178,7 +178,7 @@ const Navbar = () => (
       <img src={logoImg} alt="Logo" className="h-12 w-auto object-contain" />
     </div>
     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-white/70">
-      <a href="#projects" className="hover:text-white transition-colors">مشاريع الدورات</a>
+      <a href="#projects" className="hover:text-white transition-colors">مشاريع الكورس</a>
       <a href="#content" className="hover:text-white transition-colors">المحتوى</a>
       <a href="#faq" className="hover:text-white transition-colors">الأسئلة الشائعة</a>
     </div>
@@ -488,7 +488,9 @@ export default function App() {
       <section id="projects" className="py-24 px-6 bg-black">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold mb-4">مشاريع الدورات</h2>
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
+              <span className="text-primary-red drop-shadow-[0_0_15px_rgba(178,31,45,0.4)]">مشاريع الكورس</span>
+            </h2>
             <p className="text-xl text-white/50">بعض نماذج المشاريع التي ستتمكن من تنفيذها بعد الكورس.</p>
           </div>
           
